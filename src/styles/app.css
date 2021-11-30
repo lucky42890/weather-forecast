@@ -1,0 +1,73 @@
+html, body, p {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 16px;
+}
+
+.app-container {
+  width: 100%;
+  min-height: 100vh;
+  background: #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.w-container {
+  width: 640px;
+  padding: 24px 32px;
+  background: white;
+  box-shadow: 0px 0px 5px 2px rgba(0, 0, 0, 0.3);
+}
+
+.w-header-container {
+  display: flex;
+}
+
+.w-header-container .today-temp {
+  font-size: 56px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.w-header-container .today-temp span {
+  font-size: 32px;
+}
+
+.w-header-container .today-wind {
+  color: #afafaf;
+  font-size: 14px;
+  margin-left: 12px;
+}
+
+.w-header-container .city-search {
+  margin-left: auto;
+}
+
+.w-header-container .city-search__input {
+  width: 240px;
+  padding: 8px;
+  font-size: 18px;
+}
+
+.w-header-container .city-search__today {
+  width: 100%;
+  text-align: right;
+  font-size: 18px;
+  margin-top: 4px;
+}
+
+.w-temp-container {
+  margin: 20px 0;
+}
+
+.w-temp-container .label {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.w-temp-container .list {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px -16px;
+}
