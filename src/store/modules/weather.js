@@ -1,93 +1,96 @@
-// import shop from '../../api/shop'
+import moment from 'moment'
+import API from '../../utils/CallApi'
+import { GET_WEATHER } from '../actions.type'
 
-// // initial state
-// // shape: [{ id, quantity }]
-// const state = {
-//   items: [],
-//   checkoutStatus: null
-// }
+const API_KEY = process.env.VUE_APP_API_KEY
 
-// // getters
-// const getters = {
-//   cartProducts: (state, getters, rootState) => {
-//     return state.items.map(({ id, quantity }) => {
-//       const product = rootState.products.all.find(product => product.id === id)
-//       return {
-//         id: product.id,
-//         title: product.title,
-//         price: product.price,
-//         quantity
-//       }
-//     })
-//   },
+const STATUS = {
+  REQUESTED: 'requested',
+  SUCCEEDED: 'succeeded',
+  FAILED: 'failed',
+}
 
-//   cartTotalPrice: (state, getters) => {
-//     return getters.cartProducts.reduce((total, product) => {
-//       return total + product.price * product.quantity
-//     }, 0)
-//   }
-// }
+const state = () => ({
+  current: {},
+  hourly: [],
+  daily: [],
+  weatherStatus: null,
+  errorMsg: ''
+})
 
-// // actions
-// const actions = {
-//   checkout ({ commit, state }, products) {
-//     const savedCartItems = [...state.items]
-//     commit('setCheckoutStatus', null)
-//     // empty cart
-//     commit('setCartItems', { items: [] })
-//     shop.buyProducts(
-//       products,
-//       () => commit('setCheckoutStatus', 'successful'),
-//       () => {
-//         commit('setCheckoutStatus', 'failed')
-//         // rollback to the cart saved before sending the request
-//         commit('setCartItems', { items: savedCartItems })
-//       }
-//     )
-//   },
+const getters = {
+  currentTemperature (state) {
+    return parseInt(state.current?.temp, 10) || 0
+  },
+  currentWindSpeed (state) {
+    return (state.current?.wind_speed * 2.237).toFixed(2) || 0
+  },
+  currentHumidy (state) {
+    return state.current?.humidity || 0
+  },
+  hourlyForcast (state) {
+    const data = []
+    for (let i = 0; i < state.hourly.length; i++) {
+      if (i === 6) break
 
-//   addProductToCart ({ state, commit }, product) {
-//     commit('setCheckoutStatus', null)
-//     if (product.inventory > 0) {
-//       const cartItem = state.items.find(item => item.id === product.id)
-//       if (!cartItem) {
-//         commit('pushProductToCart', { id: product.id })
-//       } else {
-//         commit('incrementItemQuantity', cartItem)
-//       }
-//       // remove 1 item from stock
-//       commit('products/decrementProductInventory', { id: product.id }, { root: true })
-//     }
-//   }
-// }
+      data.push({
+        label: moment.unix(state.hourly[i].dt).format('ha'),
+        time: moment.unix(state.hourly[i].dt).format('k'),
+        temp: parseInt(state.hourly[i].temp, 10)
+      })
+    }
 
-// // mutations
-// const mutations = {
-//   pushProductToCart (state, { id }) {
-//     state.items.push({
-//       id,
-//       quantity: 1
-//     })
-//   },
+    return data
+  },
+  dailyForcast (state) {
+    const data = []
+    for (let i = 0; i < state.daily.length; i++) {
+      if (i === 7) break
 
-//   incrementItemQuantity (state, { id }) {
-//     const cartItem = state.items.find(item => item.id === id)
-//     cartItem.quantity++
-//   },
+      data.push({
+        label: moment.unix(state.daily[i].dt).format('ddd'),
+        high: parseInt(state.daily[i].temp.max, 10),
+        low: parseInt(state.daily[i].temp.min, 10),
+        windSpeed: (state.daily[i].wind_speed * 2.237).toFixed(2),
+        humidity: state.daily[i].humidity
+      })
+    }
 
-//   setCartItems (state, { items }) {
-//     state.items = items
-//   },
+    return data
+  }
+}
 
-//   setCheckoutStatus (state, status) {
-//     state.checkoutStatus = status
-//   }
-// }
+const actions = {
+  async [GET_WEATHER] ({ commit }, city) {
+    commit('setState', { key: 'weatherStatus' , data: STATUS.REQUESTED })
 
-// export default {
-//   namespaced: true,
-//   state,
-//   getters,
-//   actions,
-//   mutations
-// }
+    try {
+      let response = await API.get(`http://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}`)
+      const coord = response.data.coord
+      const excludePart = 'minutely,alerts'
+      response = await API.get(`https://api.openweathermap.org/data/2.5/onecall?lat=${coord.lat}&lon=${coord.lon}&exclude=${excludePart}&appid=${API_KEY}`)
+      
+      commit('setState', { key: 'current' , data: response.data?.current || {} })
+      commit('setState', { key: 'hourly' , data: response.data?.hourly || [] })
+      commit('setState', { key: 'daily' , data: response.data?.daily || [] })
+      commit('setState', { key: 'weatherStatus' , data: STATUS.SUCCEEDED })
+
+    } catch (e) {
+      commit('setState', { key: 'errorMsg' , data: e.response?.data?.message || 'Error while getting weather data' })
+      commit('setState', { key: 'weatherStatus' , data: STATUS.FAILED })
+    }
+  },
+}
+
+const mutations = {
+  setState (state, {key, data}) {
+    state[key] = data
+  }
+}
+
+export default {
+  state,
+  getters,
+  actions,
+  mutations
+}
